@@ -43,7 +43,7 @@ try:
                 print(f"Downloaded video successfully")
                 print("-"*30)      
             except Exception as e:
-                if e[:65] == '[WinError 183] Cannot create a file when that file already exists':
+                if e[:65] == '[WinError 183]':
                     print("this name already exist creating new name...")    
                     duplicate_check +=1
                     download_single_video(link, as_audio, download_path,"+("+duplicate_check+")")     
