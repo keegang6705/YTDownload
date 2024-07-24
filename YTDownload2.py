@@ -2,7 +2,7 @@ import os,json,time,re
 from tqdm import tqdm
 from pytube import YouTube, Playlist
 def clean_file_name(name):
-    cleaned_name = re.sub(r'[\/:*?"<>|]', '', name)
+    cleaned_name = re.sub(r'[\\/:*?"\'<>|]', '', name)
     return cleaned_name
 def bool2 (input):
     if input == "n" or input == "N":
@@ -16,11 +16,17 @@ script_directory = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_directory)
 dir_list = [file[:-4] for file in os.listdir(script_directory)]
 try:
-        def download_single_video(link, as_audio=True, download_path=None):
+        def download_single_video(link, as_audio=True, download_path=None,custom_name=None):
+            duplicate_check = 0
             try:
                 youtubeObject = YouTube(link)
                 old_title = youtubeObject.title
-                video_title = clean_file_name(old_title)
+                if custom_name == None:
+                    video_title = clean_file_name(old_title)
+                elif custom_name[:1] == "+" :
+                   video_title = clean_file_name(old_title)+custom_name
+                else:
+                    video_title = custom_name
                 download_dir = download_path or os.getcwd()
                 print(f"Now downloading: {video_title}")
                 print(f"URL: {link}")
@@ -37,8 +43,13 @@ try:
                 print(f"Downloaded video successfully")
                 print("-"*30)      
             except Exception as e:
-                print(e)
-                raise
+                if e[:65] == '[WinError 183] Cannot create a file when that file already exists':
+                    print("this name already exist creating new name...")    
+                    duplicate_check +=1
+                    download_single_video(link, as_audio, download_path,"+("+duplicate_check+")")     
+                else:
+                    print(e)
+                    raise
 
         def download_playlist(playlist, as_audio=True, download_path=None):
             try:
@@ -53,13 +64,12 @@ try:
                 print(f'Number of videos in playlist "{playlist_name}": {playlist_lenght}')
 
                 now_video = 1
-                with tqdm(total=playlist_lenght, desc=f"Downloading: {playlist_name}") as pbar:
+                with tqdm(total=playlist_lenght, desc=f"Downloading: {playlist_name} ") as pbar:
                     for video_url in playlist.video_urls:    
                         attempt = 0     
                         max_attempt = 3       
                         while attempt < max_attempt:
                             try:
-                                print(f"Downloading [{now_video}/{playlist_lenght}] video")
                                 download_single_video(video_url, as_audio, download_path=playlist_folder)
                                 pbar.update(1)
                                 now_video+=1
@@ -70,12 +80,13 @@ try:
                                 time.sleep(1)
                                 continue
                         else:
+                            pbar.update(1)
                             print(f"Error: max retry attempt({max_attempt}/{max_attempt})")
                         
             except Exception as e:
                 print(e)
 
-        with open("YTDownloadConfig.json","r") as f:
+        with open("config.json","r") as f:
             config = json.loads(f.read())
             f.close()
         if use_old_settings == False:
@@ -123,7 +134,7 @@ try:
                     config["app_data"]["single_url"] = single_urls
                 if playlist_url_flag:
                     config["app_data"]["playlist_url"] = playlist_urls
-                with open("YTDownloadConfig.json","w") as f:
+                with open("config.json","w") as f:
                     json.dump(config,f)
                     f.close()
         

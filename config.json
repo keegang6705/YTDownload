@@ -3,7 +3,7 @@
   "settings": { "is_playlist": true, "audio_only": true },
   "app_data": {
     "download_path": "D:\\keegang_project\\code\\python\\helpfull_program\\program_output\\downloaded\\\\ytdownload2",
-    "single_url": [""],
+    "single_url": [],
     "playlist_url": [
       "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
       "https://youtube.com/playlist?list=PLqMiAjqcD9xzTEcUUBk-fDQwjCoxHPo4K&si=F1VjiqwteDk0ZiES",
