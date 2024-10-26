@@ -1,32 +1,45 @@
+#### v2.3.0 
+###  tested 99.8% pass
+###  Unoptimized
+###  Contributors:keegang6705
+###  IMPORTANT due to pytube is broken we decided to use pytubefix instead in v3
 import os,json,time,re
 from tqdm import tqdm
 from pytube import YouTube, Playlist
+
+config = {
+  "config_version": 0,
+  "settings": { "is_playlist": True, "audio_only": True },
+  "app_data": {
+    "download_path": "/home/music",
+    "single_url": [],
+    "playlist_url": [
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xzTEcUUBk-fDQwjCoxHPo4K&si=F1VjiqwteDk0ZiES",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xz1gaw0tvdd0WnQ_eKqT96z&si=WRlHZEA5bhuK1kxh",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xwdqiE-cvsKVll0bqWLN0do&si=QcFIQwFBmyWe93US",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xwXRm6TWPQuPd9K23jSCbdu&si=F-ovJRr6dHfFNTsu",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xysMokP0H735xtUnFxMfh_n&si=NFl_78VyzFcV_rFv",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xxOPsGK58E2pG8qgZJasc7q&si=5dq1LDRl0Hxc4yhf"
+    ]
+  }
+}
+cached_err = {}
+
+
 def clean_file_name(name):
     cleaned_name = re.sub(r'[\\/:*?"\'<>|]', '', name)
     return cleaned_name
-def bool2 (input):
-    if input == "n" or input == "N":
-        return False
-    elif input == "y" or input == "Y":
-        return True
-    else:
-        raise ValueError(f"Invalid input: {input}. Only 'y', 'Y', 'n', or 'N' are allowed.")
-use_old_settings = bool2(input("use old settings and continue? (Y/N):"))
+
 script_directory = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_directory)
 dir_list = [file[:-4] for file in os.listdir(script_directory)]
 try:
-        def download_single_video(link, as_audio=True, download_path=None,custom_name=None):
-            duplicate_check = 0
+        def download_single_video(link, as_audio=True, download_path=None):
             try:
                 youtubeObject = YouTube(link)
                 old_title = youtubeObject.title
-                if custom_name == None:
-                    video_title = clean_file_name(old_title)
-                elif custom_name[:1] == "+" :
-                   video_title = clean_file_name(old_title)+custom_name
-                else:
-                    video_title = custom_name
+                video_title = clean_file_name(old_title)
                 download_dir = download_path or os.getcwd()
                 print(f"Now downloading: {video_title}")
                 print(f"URL: {link}")
@@ -43,10 +56,30 @@ try:
                 print(f"Downloaded video successfully")
                 print("-"*30)      
             except Exception as e:
-                if e[:65] == '[WinError 183]':
+                if '[WinError 183]' in str(e):
                     print("this name already exist creating new name...")    
-                    duplicate_check +=1
-                    download_single_video(link, as_audio, download_path,"+("+duplicate_check+")")     
+                    try:
+                        youtubeObject = YouTube(link)
+                        old_title = youtubeObject.title
+                        video_title = clean_file_name(old_title)+"(1)"
+                        download_dir = download_path or os.getcwd()
+                        print(f"Now downloading: {video_title}")
+                        print(f"URL: {link}")
+                        
+                        if as_audio:
+                            audio_stream = youtubeObject.streams.filter(only_audio=True).first()
+                            audio_stream.download(output_path=download_dir, filename=video_title)
+                            original_file_path = os.path.join(download_dir, video_title)
+                            new_file_path = os.path.join(download_dir, f"{video_title}.mp3")
+                            os.rename(original_file_path, new_file_path)
+                        else:
+                            video_stream = youtubeObject.streams.get_highest_resolution()
+                            video_stream.download(output_path=download_dir)
+                        print(f"Downloaded video successfully")
+                        print("-"*30)      
+                    except Exception as e:
+                        print(e)
+                        raise
                 else:
                     print(e)
                     raise
@@ -67,77 +100,30 @@ try:
                 with tqdm(total=playlist_lenght, desc=f"Downloading: {playlist_name} ") as pbar:
                     for video_url in playlist.video_urls:    
                         attempt = 0     
-                        max_attempt = 3       
+                        max_attempt = 10       
                         while attempt < max_attempt:
                             try:
+                                print("\n")
                                 download_single_video(video_url, as_audio, download_path=playlist_folder)
                                 pbar.update(1)
                                 now_video+=1
                                 break
                             except:
+                                print("\n")
                                 attempt+=1
                                 print(f"Error retrying ({attempt}/{max_attempt})")
                                 time.sleep(1)
                                 continue
                         else:
+                            print("\n")
                             pbar.update(1)
                             print(f"Error: max retry attempt({max_attempt}/{max_attempt})")
+                            cached_err[video_url] = "max retry attempt"
                         
             except Exception as e:
                 print(e)
 
-        with open("config.json","r") as f:
-            config = json.loads(f.read())
-            f.close()
-        if use_old_settings == False:
-            is_playlist = bool2(input("download as playlist? (Y/N):"))
-            audio_only = bool2(input("download only audio? (Y/N):"))
-            download_path_flag = bool2(input("enter new download path? (Y/N):"))
-            if download_path_flag:
-                download_path = str(input("download path (str):"))
-            single_url_flag = bool2(input("enter new single url? (Y/N):"))
-            single_urls = []
-            if single_url_flag:
-                single_url = str(input("single url (str):"))
-                single_urls.append(single_url)
-                add_single_url_flag = True
-                while add_single_url_flag:
-                    add_single_url_flag = bool2(input("enter more single url? (Y/N):"))
-                    if add_single_url_flag:
-                        single_url = str(input("single url (str):"))
-                        single_urls.append(single_url)
-                    else:
-                        break
-                
-            playlist_url_flag = bool2(input("enter new playlist url? (Y/N):"))
-            playlist_urls = [] 
-            if playlist_url_flag:             
-                playlist_url = str(input("playlist url (str):"))
-                playlist_urls.append(playlist_url)
-                add_playlist_url_flag = True
-                while add_playlist_url_flag:
-                    add_playlist_url_flag = bool2(input("enter more playlist url? (Y/N):"))
-                    if add_playlist_url_flag:
-                        playlist_url = str(input("playlist url (str):"))
-                        playlist_urls.append(playlist_url)
-                    else:
-                        break
-
-
-            save_change__flag = bool2(input("save change to config file? (Y/N):"))
-            if save_change__flag:
-                config["settings"]["is_playlist"] = is_playlist
-                config["settings"]["audio_only"] = audio_only
-                if download_path_flag:
-                    config["app_data"]["download_path"] = download_path
-                if single_url_flag:
-                    config["app_data"]["single_url"] = single_urls
-                if playlist_url_flag:
-                    config["app_data"]["playlist_url"] = playlist_urls
-                with open("config.json","w") as f:
-                    json.dump(config,f)
-                    f.close()
-        
+       
         print("-"*30)
         print(json.dumps(config,indent=1))
         print("-"*30)
@@ -152,10 +138,15 @@ try:
                 print(f"Downloading [{now_playlist}/{len(playlist_links)}] playlist")
                 download_playlist(i, audio_only, download_path)
                 now_playlist+=1
+            print("printing cached error...\n")
+            print("-"*30)
+            print(json.dumps(cached_err,indent=1))
+            print("-"*30)
         else:
             url = config["app_data"]["single_url"]
             for i in url:
                 download_single_video(i, audio_only, download_path)
+
 except Exception as e:
     print(e)
 
