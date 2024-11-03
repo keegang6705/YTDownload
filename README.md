@@ -8,15 +8,16 @@ This project is a script for downloading videos from YouTube using Python, suppo
 - Required libraries:
   - `pytubefix`
   - `tqdm`
+  - `moviepy`
 
 You can install the necessary libraries using the following command:
 ```bash
-pip install pytubefix tqdm
+pip install pytubefix tqdm moviepy
 ```
 ## usage
 You can customize various settings in the config by modifying the values in config varriable
 ```bash
-python3 YTDownload3.py
+python3 YTDownload3.5.py
 ```
 ## Features
 - Supports downloading both audio and video.
