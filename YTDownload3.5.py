@@ -1,8 +1,7 @@
-#### v3.5.2
+#### v3.5.3
 ###  tested 100% pass
 ###  Unoptimized
 ###  Contributors:keegang6705,flame-suwan,Calude
-
 import os
 import time
 import re
@@ -10,27 +9,29 @@ from tqdm import tqdm
 from pytubefix import YouTube, Playlist
 from pytubefix.cli import on_progress
 import unicodedata
+from moviepy.editor import AudioFileClip
+import shutil
 
 config = {
-  "config_version": 1,
-  "settings": { 
-      "is_playlist": True, 
-      "audio_only": True,
-      "user_login": False 
-  },
-  "app_data": {
-    "download_path": "/home/music",
-    "single_url": [],
-    "playlist_url": [
-      "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
-      "https://youtube.com/playlist?list=PLqMiAjqcD9xzTEcUUBk-fDQwjCoxHPo4K&si=F1VjiqwteDk0ZiES",
-      "https://youtube.com/playlist?list=PLqMiAjqcD9xz1gaw0tvdd0WnQ_eKqT96z&si=WRlHZEA5bhuK1kxh",
-      "https://youtube.com/playlist?list=PLqMiAjqcD9xwdqiE-cvsKVll0bqWLN0do&si=QcFIQwFBmyWe93US",
-      "https://youtube.com/playlist?list=PLqMiAjqcD9xwXRm6TWPQuPd9K23jSCbdu&si=F-ovJRr6dHfFNTsu",
-      "https://youtube.com/playlist?list=PLqMiAjqcD9xysMokP0H735xtUnFxMfh_n&si=NFl_78VyzFcV_rFv",
-      "https://youtube.com/playlist?list=PLqMiAjqcD9xxOPsGK58E2pG8qgZJasc7q&si=5dq1LDRl0Hxc4yhf"
-    ]
-  }
+    "config_version": 1,
+    "settings": { 
+        "is_playlist": True, 
+        "audio_only": True,
+        "user_login": True 
+    },
+    "app_data": {
+        "download_path": "D:\keegang_project\code\python\helpfull_program\program_output\downloaded\music",
+        "single_url": [],
+        "playlist_url": [
+            "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
+            "https://youtube.com/playlist?list=PLqMiAjqcD9xzTEcUUBk-fDQwjCoxHPo4K&si=F1VjiqwteDk0ZiES",
+            "https://youtube.com/playlist?list=PLqMiAjqcD9xz1gaw0tvdd0WnQ_eKqT96z&si=WRlHZEA5bhuK1kxh",
+            "https://youtube.com/playlist?list=PLqMiAjqcD9xwdqiE-cvsKVll0bqWLN0do&si=QcFIQwFBmyWe93US",
+            "https://youtube.com/playlist?list=PLqMiAjqcD9xwXRm6TWPQuPd9K23jSCbdu&si=F-ovJRr6dHfFNTsu",
+            "https://youtube.com/playlist?list=PLqMiAjqcD9xysMokP0H735xtUnFxMfh_n&si=NFl_78VyzFcV_rFv",
+            "https://youtube.com/playlist?list=PLqMiAjqcD9xxOPsGK58E2pG8qgZJasc7q&si=5dq1LDRl0Hxc4yhf"
+        ]
+    }
 }
 
 MAX_FILENAME_LENGTH = 180
@@ -74,6 +75,17 @@ def get_unique_filename(base_path, filename):
     
     return new_filename
 
+def convert_to_mp3(input_path, output_path):
+    """Convert video/audio file to MP3 format."""
+    try:
+        audio = AudioFileClip(input_path)
+        audio.write_audiofile(output_path, logger=None)
+        audio.close()
+        # Remove the original file after conversion
+        os.remove(input_path)
+    except Exception as e:
+        raise DownloadError(f"Error converting to MP3: {str(e)}")
+
 def download_single_video(link, as_audio=True, download_path=None):
     try:
         youtubeObject = YouTube(link, on_progress_callback=on_progress, use_oauth=config["settings"]["user_login"])
@@ -81,23 +93,37 @@ def download_single_video(link, as_audio=True, download_path=None):
         video_title = clean_filename(original_title)
         download_dir = download_path or os.getcwd()
         video_title = get_unique_filename(download_dir, video_title)
+        
+        # Create temporary filename for downloaded file
+        temp_filename = os.path.splitext(video_title)[0] + '_temp.mp4'
+        final_filename = os.path.splitext(video_title)[0] + '.mp3'
+        
         full_path = os.path.join(download_dir, video_title)
         if len(full_path.encode('utf-8')) >= 255:
             video_title = clean_filename(original_title, max_length=100)
             video_title = get_unique_filename(download_dir, video_title)
         
         print(f"\nNow downloading: {original_title}")
-        print(f"Saving as: {video_title}")
+        print(f"Saving as: {final_filename}")
         print(f"URL: {link}")
         
         if as_audio:
+            # Download audio stream
             stream = youtubeObject.streams.get_audio_only()
-            stream.download(output_path=download_dir, filename=video_title, mp3=True)
+            temp_path = os.path.join(download_dir, temp_filename)
+            final_path = os.path.join(download_dir, final_filename)
+            
+            # Download to temporary file
+            stream.download(output_path=download_dir, filename=temp_filename)
+            
+            print("Converting to MP3...")
+            # Convert to proper MP3
+            convert_to_mp3(temp_path, final_path)
         else:
             stream = youtubeObject.streams.get_highest_resolution()
             stream.download(output_path=download_dir, filename=video_title)
             
-        print("Downloaded successfully")
+        print("Downloaded and converted successfully")
         print("-" * 30)
         
     except Exception as e:
