@@ -20,7 +20,7 @@ config = {
         "user_login": True 
     },
     "app_data": {
-        "download_path": "D:\keegang_project\code\python\helpfull_program\program_output\downloaded\music",
+        "download_path": "/home/music",
         "single_url": [],
         "playlist_url": [
             "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
