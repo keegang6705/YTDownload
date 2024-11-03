@@ -12,18 +12,21 @@ from pytubefix.cli import on_progress
 import unicodedata
 
 config = {
-    "config_version": 0,
-    "settings": {
-        "is_playlist": True,
-        "audio_only": True
-    },
-    "app_data": {
-        "download_path": "/home/keegang/files/YTDownload/music",
-        "single_url": [],
-        "playlist_url": [
-            "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
-        ]
-    }
+  "config_version": 0,
+  "settings": { "is_playlist": True, "audio_only": True },
+  "app_data": {
+    "download_path": "/home/music",
+    "single_url": [],
+    "playlist_url": [
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xzTEcUUBk-fDQwjCoxHPo4K&si=F1VjiqwteDk0ZiES",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xz1gaw0tvdd0WnQ_eKqT96z&si=WRlHZEA5bhuK1kxh",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xwdqiE-cvsKVll0bqWLN0do&si=QcFIQwFBmyWe93US",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xwXRm6TWPQuPd9K23jSCbdu&si=F-ovJRr6dHfFNTsu",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xysMokP0H735xtUnFxMfh_n&si=NFl_78VyzFcV_rFv",
+      "https://youtube.com/playlist?list=PLqMiAjqcD9xxOPsGK58E2pG8qgZJasc7q&si=5dq1LDRl0Hxc4yhf"
+    ]
+  }
 }
 
 MAX_FILENAME_LENGTH = 180
