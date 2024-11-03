@@ -1,6 +1,6 @@
-#### v3.5.1 
+#### v3.5.2
 ###  tested 100% pass
-###  Optimized
+###  Unoptimized
 ###  Contributors:keegang6705,flame-suwan,Calude
 
 import os
@@ -12,8 +12,12 @@ from pytubefix.cli import on_progress
 import unicodedata
 
 config = {
-  "config_version": 0,
-  "settings": { "is_playlist": True, "audio_only": True },
+  "config_version": 1,
+  "settings": { 
+      "is_playlist": True, 
+      "audio_only": True,
+      "user_login": False 
+  },
   "app_data": {
     "download_path": "/home/music",
     "single_url": [],
@@ -72,7 +76,7 @@ def get_unique_filename(base_path, filename):
 
 def download_single_video(link, as_audio=True, download_path=None):
     try:
-        youtubeObject = YouTube(link, on_progress_callback=on_progress)
+        youtubeObject = YouTube(link, on_progress_callback=on_progress, use_oauth=config["settings"]["user_login"])
         original_title = youtubeObject.title
         video_title = clean_filename(original_title)
         download_dir = download_path or os.getcwd()
