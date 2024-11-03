@@ -11,7 +11,6 @@ from pytubefix import YouTube, Playlist
 from pytubefix.cli import on_progress
 import unicodedata
 
-# Configuration dictionary (keeping your existing config)
 config = {
     "config_version": 0,
     "settings": {
@@ -23,75 +22,36 @@ config = {
         "single_url": [],
         "playlist_url": [
             "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
-            # ... other playlist URLs ...
         ]
     }
 }
 
-MAX_FILENAME_LENGTH = 180  # Reduced to account for path length and safety margin
+MAX_FILENAME_LENGTH = 180
 MAX_RETRY_ATTEMPTS = 10
 TRUNCATE_SUFFIX = "..."
 
 class DownloadError(Exception):
-    """Custom exception for download-related errors"""
     pass
 
 def clean_filename(name, max_length=MAX_FILENAME_LENGTH):
-    """
-    Clean and truncate filename to be compatible with both Windows and Linux,
-    with improved handling of UTF-8 characters.
-    
-    Args:
-        name (str): Original filename
-        max_length (int): Maximum allowed filename length
-        
-    Returns:
-        str: Cleaned and truncated filename
-    """
-    # Normalize unicode characters
     name = unicodedata.normalize('NFKC', name)
-    
-    # Remove invalid characters for both Windows and Linux
     cleaned_name = re.sub(r'[\\/:*?"\'<>|]', '', name)
-    
-    # Replace spaces and other whitespace with underscores
     cleaned_name = re.sub(r'\s+', '_', cleaned_name)
-    
-    # Remove any non-printable characters
     cleaned_name = ''.join(char for char in cleaned_name if char.isprintable())
-    
-    # Get name parts
     name_parts = os.path.splitext(cleaned_name)
     extension = name_parts[1] if len(name_parts) > 1 else '.mp3'
-    
-    # Calculate available length for base name
     available_length = max_length - len(extension) - len(TRUNCATE_SUFFIX)
     
     if len(cleaned_name) > max_length:
-        # Get the first part of the filename (trying to keep meaningful content)
         base_name = name_parts[0][:available_length]
-        
-        # Remove any partial UTF-8 characters at the end
         while len(base_name.encode('utf-8')) > available_length:
             base_name = base_name[:-1]
-        
-        # Create final filename
         truncated_name = base_name + TRUNCATE_SUFFIX + extension
         return truncated_name
     
     return cleaned_name
 
 def get_unique_filename(base_path, filename):
-    """
-    Generate a unique filename if the original already exists.
-    
-    Args:
-        base_path (str): Directory path
-        filename (str): Original filename
-        
-    Returns:
-        str: Unique filename
-    """
     name_parts = os.path.splitext(filename)
     base_name = name_parts[0]
     extension = name_parts[1] if len(name_parts) > 1 else '.mp3'
@@ -100,7 +60,6 @@ def get_unique_filename(base_path, filename):
     
     while os.path.exists(os.path.join(base_path, new_filename)):
         new_name = f"{base_name}_{counter}"
-        # Make sure the new filename with counter doesn't exceed max length
         if len(new_name) > MAX_FILENAME_LENGTH - len(extension):
             new_name = new_name[:MAX_FILENAME_LENGTH - len(extension) - 3] + "..."
         new_filename = f"{new_name}{extension}"
@@ -109,32 +68,15 @@ def get_unique_filename(base_path, filename):
     return new_filename
 
 def download_single_video(link, as_audio=True, download_path=None):
-    """
-    Download a single video with improved error handling.
-    
-    Args:
-        link (str): YouTube video URL
-        as_audio (bool): Whether to download as audio only
-        download_path (str): Download directory path
-        
-    Raises:
-        DownloadError: If download fails after maximum retries
-    """
     try:
         youtubeObject = YouTube(link, on_progress_callback=on_progress)
         original_title = youtubeObject.title
-        
-        # Clean and truncate filename
         video_title = clean_filename(original_title)
         download_dir = download_path or os.getcwd()
-        
-        # Get unique filename
         video_title = get_unique_filename(download_dir, video_title)
-        
-        # Final length check including full path
         full_path = os.path.join(download_dir, video_title)
-        if len(full_path.encode('utf-8')) >= 255:  # Max path length
-            video_title = clean_filename(original_title, max_length=100)  # Use shorter length
+        if len(full_path.encode('utf-8')) >= 255:
+            video_title = clean_filename(original_title, max_length=100)
             video_title = get_unique_filename(download_dir, video_title)
         
         print(f"\nNow downloading: {original_title}")
@@ -157,17 +99,6 @@ def download_single_video(link, as_audio=True, download_path=None):
         raise DownloadError(error_msg)
 
 def download_playlist(playlist_url, as_audio=True, download_path=None):
-    """
-    Download a playlist with progress tracking and error handling.
-    
-    Args:
-        playlist_url (str): YouTube playlist URL
-        as_audio (bool): Whether to download as audio only
-        download_path (str): Base download directory path
-        
-    Returns:
-        dict: Dictionary of errors encountered during download
-    """
     errors = {}
     
     try:
@@ -203,7 +134,6 @@ def download_playlist(playlist_url, as_audio=True, download_path=None):
     return errors
 
 def main():
-    """Main execution function"""
     script_directory = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_directory)
     
