@@ -1,7 +1,8 @@
-#### v3.5.3
+#### v3.5.4
 ###  tested 100% pass
-###  Unoptimized
 ###  Contributors:keegang6705,flame-suwan,Calude
+
+### moviepy==1.0.3
 import os
 import time
 import re
@@ -20,7 +21,7 @@ config = {
         "user_login": True 
     },
     "app_data": {
-        "download_path": "/home/music",
+        "download_path": "C:\Temp\music",
         "single_url": [],
         "playlist_url": [
             "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
@@ -95,7 +96,7 @@ def download_single_video(link, as_audio=True, download_path=None):
         video_title = get_unique_filename(download_dir, video_title)
         
         # Create temporary filename for downloaded file
-        temp_filename = os.path.splitext(video_title)[0] + '_temp.mp4'
+        temp_filename = os.path.splitext(video_title)[0] + '_temp'
         final_filename = os.path.splitext(video_title)[0] + '.mp3'
         
         full_path = os.path.join(download_dir, video_title)
@@ -118,7 +119,7 @@ def download_single_video(link, as_audio=True, download_path=None):
             
             print("Converting to MP3...")
             # Convert to proper MP3
-            convert_to_mp3(temp_path, final_path)
+            convert_to_mp3(temp_path+".m4a", final_path)
         else:
             stream = youtubeObject.streams.get_highest_resolution()
             stream.download(output_path=download_dir, filename=video_title)
