@@ -45,7 +45,6 @@ class DownloadError(Exception):
 def clean_filename(name, max_length=MAX_FILENAME_LENGTH):
     name = unicodedata.normalize('NFKC', name)
     cleaned_name = re.sub(r'[\\/:*?"\'<>|]', '', name)
-    cleaned_name = re.sub(r'\s+', '', cleaned_name)
     cleaned_name = ''.join(char for char in cleaned_name if char.isprintable())
     name_parts = os.path.splitext(cleaned_name)
     extension = name_parts[1] if len(name_parts) > 1 else '.mp3'
