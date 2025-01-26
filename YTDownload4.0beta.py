@@ -1,4 +1,4 @@
-#### v3.5.5
+#### v4.0 beta
 ###  tested 100% pass
 ###  Contributors:keegang6705,flame-suwan,Calude
 
@@ -12,16 +12,20 @@ from pytubefix.cli import on_progress
 import unicodedata
 from moviepy.editor import AudioFileClip
 import shutil
+from PIL import Image
+from io import BytesIO
+import requests
 
 config = {
     "config_version": 1,
     "settings": { 
         "is_playlist": True, 
         "audio_only": True,
-        "user_login": False 
+        "user_login": False,
+        "metadata": True 
     },
     "app_data": {
-        "download_path": "C:\Temp\music",
+        "download_path": "C:\Temp\\test",
         "single_url": [],
         "playlist_url": [
             "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH",
@@ -86,9 +90,41 @@ def convert_to_mp3(input_path, output_path):
     except Exception as e:
         raise DownloadError(f"Error converting to MP3: {str(e)}")
 
+class VideoMetadata:
+    def __init__(self, yt):
+        self.title = yt.title
+        self.author = yt.author
+        self.thumbnail_url = yt.thumbnail_url
+        self.description = yt.description
+        self.upload_date = yt.publish_date
+        self.duration = yt.length
+        
+    def save_thumbnail(self, download_path, filename):
+        if not self.thumbnail_url:
+            return None
+            
+        thumbnail_dir = os.path.join(download_path, "thumbnails")
+        os.makedirs(thumbnail_dir, exist_ok=True)
+        
+        response = requests.get(self.thumbnail_url)
+        img = Image.open(BytesIO(response.content))
+        
+        thumb_path = os.path.join(thumbnail_dir, f"{filename}.jpg")
+        img.save(thumb_path, "JPEG")
+        return thumb_path
+        
+    def __str__(self):
+        return f"Title: {self.title}\nAuthor: {self.author}\nDuration: {self.duration}s"
+
 def download_single_video(link, as_audio=True, download_path=None):
     try:
-        youtubeObject = YouTube(link, on_progress_callback=on_progress, use_oauth=config["settings"]["user_login"])
+        youtubeObject = YouTube(url=link, client = 'WEB', on_progress_callback=on_progress, use_oauth=config["settings"]["user_login"])
+        
+        # Get metadata if enabled
+        if config["settings"]["metadata"]:
+            metadata = VideoMetadata(youtubeObject)
+            print(f"\nAuthor: {metadata.author}")
+        
         original_title = youtubeObject.title
         video_title = clean_filename(original_title)
         download_dir = download_path or os.getcwd()
@@ -119,6 +155,15 @@ def download_single_video(link, as_audio=True, download_path=None):
             print("Converting to MP3...")
             # Convert to proper MP3
             convert_to_mp3(temp_path, final_path)
+            
+            # Download thumbnail if enabled
+            if config["settings"]["metadata"] and as_audio:
+                thumbnail_path = metadata.save_thumbnail(
+                    download_dir,
+                    os.path.splitext(final_filename)[0]
+                )
+                if thumbnail_path:
+                    print(f"Thumbnail saved: {thumbnail_path}")
         else:
             stream = youtubeObject.streams.get_highest_resolution()
             stream.download(output_path=download_dir, filename=video_title)
