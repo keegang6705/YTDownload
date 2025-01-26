@@ -88,7 +88,7 @@ def convert_to_mp3(input_path, output_path):
 
 def download_single_video(link, as_audio=True, download_path=None):
     try:
-        youtubeObject = YouTube(link, on_progress_callback=on_progress, use_oauth=config["settings"]["user_login"])
+        youtubeObject = YouTube(url=link, client='WEB', on_progress_callback=on_progress, use_oauth=config["settings"]["user_login"])
         original_title = youtubeObject.title
         video_title = clean_filename(original_title)
         download_dir = download_path or os.getcwd()
