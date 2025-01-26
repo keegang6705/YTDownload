@@ -18,7 +18,7 @@ config = {
     "settings": { 
         "is_playlist": True, 
         "audio_only": True,
-        "user_login": True 
+        "user_login": False 
     },
     "app_data": {
         "download_path": "C:\Temp\music",
@@ -35,7 +35,7 @@ config = {
     }
 }
 
-MAX_FILENAME_LENGTH = 180
+MAX_FILENAME_LENGTH = 85
 MAX_RETRY_ATTEMPTS = 10
 TRUNCATE_SUFFIX = "..."
 
