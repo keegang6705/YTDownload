@@ -1,5 +1,5 @@
-#### v3.5.5
-###  tested 100% pass
+#### v3.5.6
+###  untested
 ###  Contributors:keegang6705,flame-suwan,Calude
 
 ### moviepy==1.0.3
@@ -30,7 +30,7 @@ config = {
             "https://youtube.com/playlist?list=PLqMiAjqcD9xwdqiE-cvsKVll0bqWLN0do&si=QcFIQwFBmyWe93US", ##chinese
             "https://youtube.com/playlist?list=PLqMiAjqcD9xwXRm6TWPQuPd9K23jSCbdu&si=F-ovJRr6dHfFNTsu", ##thai
             "https://youtube.com/playlist?list=PLqMiAjqcD9xysMokP0H735xtUnFxMfh_n&si=NFl_78VyzFcV_rFv", ##idk
-            "https://youtube.com/playlist?list=PLqMiAjqcD9xxOPsGK58E2pG8qgZJasc7q&si=5dq1LDRl0Hxc4yhf"  ##arknights soundtracks
+            "https://music.youtube.com/playlist?list=PLqMiAjqcD9xxFBRQwGbUrq-ySfU3G2uqK&si=i6WQO37iKKV2K3Cg"  ##arknights soundtracks
         ]
     }
 }
@@ -44,20 +44,32 @@ class DownloadError(Exception):
 
 def clean_filename(name, max_length=MAX_FILENAME_LENGTH):
     name = unicodedata.normalize('NFKC', name)
-    cleaned_name = re.sub(r'[\\/:*?"\'<>|]', '', name)
-    cleaned_name = ''.join(char for char in cleaned_name if char.isprintable())
-    name_parts = os.path.splitext(cleaned_name)
+    
+    # Preserve the extension first
+    name_parts = os.path.splitext(name)
+    base_name = name_parts[0]
     extension = name_parts[1] if len(name_parts) > 1 else '.mp3'
-    available_length = max_length - len(extension) - len(TRUNCATE_SUFFIX)
     
-    if len(cleaned_name) > max_length:
-        base_name = name_parts[0][:available_length]
-        while len(base_name.encode('utf-8')) > available_length:
-            base_name = base_name[:-1]
-        truncated_name = base_name + TRUNCATE_SUFFIX + extension
-        return truncated_name
+    # Clean the base name
+    cleaned_base = re.sub(r'[\\/:*?"\'<>|]', '', base_name)
+    cleaned_base = ''.join(char for char in cleaned_base if char.isprintable())
     
-    return cleaned_name
+    # Calculate available length for the base name
+    available_length = max_length - len(extension)
+    
+    if len(cleaned_base) > available_length:
+        # Truncate while preserving Unicode characters
+        while len(cleaned_base.encode('utf-8')) > available_length:
+            cleaned_base = cleaned_base[:-1]
+        final_name = f"{cleaned_base}{extension}"
+    else:
+        final_name = f"{cleaned_base}{extension}"
+    
+    # Debug logging
+    print(f"Original name: {name}")
+    print(f"Cleaned name: {final_name}")
+    
+    return final_name
 
 def get_unique_filename(base_path, filename):
     name_parts = os.path.splitext(filename)
@@ -66,10 +78,9 @@ def get_unique_filename(base_path, filename):
     counter = 1
     new_filename = filename
     
+    # Check for existing files and create unique name
     while os.path.exists(os.path.join(base_path, new_filename)):
-        new_name = f"{base_name}_{counter}"
-        if len(new_name) > MAX_FILENAME_LENGTH - len(extension):
-            new_name = new_name[:MAX_FILENAME_LENGTH - len(extension) - 3] + "..."
+        new_name = f"{base_name} ({counter})"
         new_filename = f"{new_name}{extension}"
         counter += 1
     
@@ -94,9 +105,18 @@ def download_single_video(link, as_audio=True, download_path=None):
         download_dir = download_path or os.getcwd()
         video_title = get_unique_filename(download_dir, video_title)
         
+        # Check if file already exists before downloading
+        final_filename = os.path.splitext(video_title)[0] + '.mp3'
+        final_path = os.path.join(download_dir, final_filename)
+        
+        if os.path.exists(final_path):
+            print(f"\nSkipping: {original_title}")
+            print(f"File already exists: {final_filename}")
+            print("-" * 30)
+            return
+        
         # Create temporary filename for downloaded file
         temp_filename = os.path.splitext(video_title)[0] + '_temp'
-        final_filename = os.path.splitext(video_title)[0] + '.mp3'
         
         full_path = os.path.join(download_dir, video_title)
         if len(full_path.encode('utf-8')) >= 255:
