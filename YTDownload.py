@@ -1,6 +1,3 @@
-#### v4.0
-###  Contributors:keegang6705,flame-suwan,Calude
-
 import os,time,re,json,unicodedata
 from tqdm import tqdm
 from pytubefix import YouTube, Playlist
@@ -171,4 +168,4 @@ def main():
     except Exception as e:
         print(f"Fatal error: {str(e)}")
     print("\n-------------- Download finished --------------")
-    
+main()
