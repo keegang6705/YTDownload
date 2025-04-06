@@ -121,7 +121,7 @@ def download_single_video(link, as_audio=True, download_path=None, progress_call
         temp_filename = os.path.splitext(video_title)[0] + '_temp'
         full_path = os.path.join(download_dir, video_title)
         if len(full_path.encode('utf-8')) >= 255:
-            video_title = clean_filename(original_title, max_length=100)
+            video_title = clean_filename(original_title, max_length=config["settings"]["max_name_length"])
             video_title = get_unique_filename(download_dir, video_title)
         if progress_callback:
             progress_callback(0, f"{Fore.BLUE}⬇️ Downloading: {original_title[:40]}...")
@@ -158,9 +158,9 @@ def download_video_worker(args):
             break
         except DownloadError as e:
             if attempt == config["settings"]["max_retry_attempt"] - 1:
-                result["message"] = f"{Fore.RED}Failed after {config["settings"]["max_retry_attempt"]} attempts: {str(e)}"
+                result["message"] = f"{Fore.RED}Failed after {config['settings']['max_retry_attempt']} attempts: {str(e)}"
             else:
-                update_progress(0, f"{Fore.YELLOW}⚠️ Retry {attempt+1}/{config["settings"]["max_retry_attempt"]}: {str(e)[:40]}...")
+                update_progress(0, f"{Fore.YELLOW}⚠️ Retry {attempt+1}/{config['settings']['max_retry_attempt']}: {str(e)[:40]}...")
                 time.sleep(1)
     return result
 class DownloadQueue:
@@ -170,89 +170,71 @@ class DownloadQueue:
         self.failed = 0
         self.in_progress = 0
         self.pending = total_items
-        self.pbar = tqdm(
-            total=total_items, 
-            desc=f"{Fore.CYAN}📥 Overall Progress",
-            bar_format='{desc}: {percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]',
-            leave=True
-        )
-
-    def update(self, index, progress, status_message):
-        with self.pbar.get_lock():  # Use tqdm's internal lock for thread safety
-            if progress == 1:
-                self.completed += 1
-                self.in_progress -= 1
-            elif progress == -1:
-                self.failed += 1
-                self.in_progress -= 1
-            else:
-                self.in_progress += 1
-                self.pending -= 1
-
-            # Update the description with current stats
-            self.pbar.set_description(
-                f"{Fore.CYAN}📥 Overall Progress: {Fore.GREEN}{self.completed} ✓ "
-                f"{Fore.RED}{self.failed} ✗ {Fore.BLUE}{self.in_progress} ⬇️ "
-                f"{Fore.YELLOW}{self.pending} ⏳"
-            )
-
-            # Optionally log active downloads (less frequently to avoid flicker)
-            if status_message and progress not in [-1, 1]:  # Only show during download
-                safe_print(f"{Fore.CYAN}▶ {status_message}", end='\r')
-
-            self.pbar.update(1 if progress in [1, -1] else 0)
-
-    def close(self):
-        self.pbar.close()
-    def __init__(self, total_items):
-        self.total_items = total_items
-        self.completed = 0
-        self.failed = 0
-        self.in_progress = 0
-        self.pending = total_items
         self.active_items = {}
         self.pbar = tqdm(
-            total=total_items, 
-            desc=f"{Fore.CYAN}📥 Overall Progress", 
+            total=total_items,
+            desc=f"{Fore.CYAN}📥 Overall Progress",
             bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]',
             leave=True
         )
         self.lock = threading.Lock()
+
     def update(self, index, progress, status_message):
         with self.lock:
-            if progress == 1:
+            if progress == 1:  # Item completed successfully
                 if index in self.active_items:
                     self.active_items.pop(index)
                     self.completed += 1
-                    self.pending -= 1
                     self.in_progress -= 1
+                    # Update progress bar counter but don't refresh display yet
                     self.pbar.update(1)
-            elif progress == -1:
+            elif progress == -1:  # Item failed
                 if index in self.active_items:
                     self.active_items.pop(index)
                     self.failed += 1
-                    self.pending -= 1
                     self.in_progress -= 1
+                    # Update progress bar counter but don't refresh display yet
                     self.pbar.update(1)
-            else:
+            else:  # Item in progress
                 if index not in self.active_items:
                     self.in_progress += 1
-                    self.pending -= 1
+                    self.pending = self.total_items - (self.completed + self.failed + self.in_progress)
+                # Always update the status message
                 self.active_items[index] = status_message
+                
+            # Always recalculate pending count to ensure consistency
+            self.pending = self.total_items - (self.completed + self.failed + self.in_progress)
+            # Now refresh the display with updated counters
             self._refresh_status()
+
     def _refresh_status(self):
         with console_lock:
+            # Update progress bar description without creating a new one
             self.pbar.set_description(
                 f"{Fore.CYAN}📥 Overall Progress: {Fore.GREEN}{self.completed} ✓ {Fore.RED}{self.failed} ✗ "
                 f"{Fore.BLUE}{self.in_progress} ⬇️ {Fore.YELLOW}{self.pending} ⏳"
             )
+            
+            # Force refresh the progress bar display
+            self.pbar.refresh()
+            
+            # Save cursor position
             print("\033[s", end="")
+            
+            # Clear from cursor to end of screen (including any previous active downloads)
             print("\033[J", end="")
+            
+            # Print active downloads (if any)
             if self.active_items:
                 print(f"\n{Fore.CYAN}▶ Active Downloads:")
                 for index, status in sorted(self.active_items.items()):
-                    print(f"  {status}")
+                    # Make sure we're not including any ANSI escape sequences or progress bars in the status
+                    clean_status = status.split("📥 Overall Progress")[0].strip()
+                    print(f"  {clean_status}")
+            
+            # Restore cursor position
             print("\033[u", end="", flush=True)
+
     def close(self):
         self.pbar.close()
 def download_playlist(playlist_url, as_audio=True, download_path=None):
@@ -353,7 +335,7 @@ def main():
         else:
             single_urls = config["app_data"]["single_url"]
             safe_print(f'{Fore.CYAN}🎬 Processing {Fore.GREEN}{len(single_urls)}{Fore.CYAN} videos')
-            results = download_single_videos(single_urls, audio_only, download_path)
+            results = download_single_video(single_urls, audio_only, download_path)
             all_results.extend(results)
         success_count = sum(1 for r in all_results if r.get("success", False))
         failed_count = len(all_results) - success_count
