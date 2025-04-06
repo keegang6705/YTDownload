@@ -32,12 +32,9 @@ def load_config(path='./config.json'):
             }
         }
 config = load_config()
-config.settings.max_name_length = 85
-config.settings.max_retry_attempt = 10
-config.settings.truncate_suffix = "..."
 class DownloadError(Exception):
     pass
-def clean_filename(name, max_length=config.settings.max_name_length):
+def clean_filename(name, max_length=config["settings"]["max_name_length"]):
     name = unicodedata.normalize('NFKC', name)
     name_parts = os.path.splitext(name)
     base_name = name_parts[0]
@@ -123,16 +120,16 @@ def download_playlist(playlist_url, as_audio=True, download_path=None):
         print(f'\nNumber of videos in playlist "{playlist_name}": {total_videos}')
         with tqdm(total=total_videos, desc=f"Downloading: {playlist_name}") as pbar:
             for video_url in playlist.video_urls:
-                for attempt in range(config.settings.max_retry_attempt):
+                for attempt in range(config["settings"]["max_retry_attempt"]):
                     try:
                         download_single_video(video_url, as_audio, download_path=playlist_folder)
                         break
                     except DownloadError as e:
-                        if attempt == config.settings.max_retry_attempt - 1:
+                        if attempt == config["settings"]["max_retry_attempt"] - 1:
                             errors[video_url] = str(e)
-                            print(f"\nError: max retry attempts ({config.settings.max_retry_attempt}) reached")
+                            print(f"\nError: max retry attempts ({config["settings"]["max_retry_attempt"]}) reached")
                         else:
-                            print(f"\nRetrying ({attempt + 1}/{config.settings.max_retry_attempt})")
+                            print(f"\nRetrying ({attempt + 1}/{config["settings"]["max_retry_attempt"]})")
                             time.sleep(1)
                 pbar.update(1)
     except Exception as e:
@@ -174,5 +171,4 @@ def main():
     except Exception as e:
         print(f"Fatal error: {str(e)}")
     print("\n-------------- Download finished --------------")
-if __name__ == "__main__":
-    main()
+    

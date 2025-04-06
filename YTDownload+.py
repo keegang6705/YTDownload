@@ -73,7 +73,7 @@ def print_config_info():
     print(f"{Fore.CYAN}▶ {Fore.WHITE}Download path: {Fore.GREEN}{config['app_data']['download_path']}")
     print(f"{Fore.CYAN}{'─' * 50}{Style.RESET_ALL}")
 
-def clean_filename(name, max_length=config.settings.max_name_length):
+def clean_filename(name, max_length=config["settings"]["max_name_length"]):
     name = unicodedata.normalize('NFKC', name)
     
     # Preserve the extension first
@@ -203,17 +203,17 @@ def download_video_worker(args):
         if queue_status:
             queue_status.update(index, progress, status_message)
     
-    for attempt in range(config.settings.max_retry_attempt):
+    for attempt in range(config["settings"]["max_retry_attempt"]):
         try:
             message = download_single_video(url, audio_only, path, update_progress)
             result["success"] = True
             result["message"] = message
             break
         except DownloadError as e:
-            if attempt == config.settings.max_retry_attempt - 1:
-                result["message"] = f"{Fore.RED}Failed after {config.settings.max_retry_attempt} attempts: {str(e)}"
+            if attempt == config["settings"]["max_retry_attempt"] - 1:
+                result["message"] = f"{Fore.RED}Failed after {config["settings"]["max_retry_attempt"]} attempts: {str(e)}"
             else:
-                update_progress(0, f"{Fore.YELLOW}⚠️ Retry {attempt+1}/{config.settings.max_retry_attempt}: {str(e)[:40]}...")
+                update_progress(0, f"{Fore.YELLOW}⚠️ Retry {attempt+1}/{config["settings"]["max_retry_attempt"]}: {str(e)[:40]}...")
                 time.sleep(1)  # Wait before retry
     
     return result
