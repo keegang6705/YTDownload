@@ -1,39 +1,35 @@
-#### v3.5.6
+#### v4.0
 ###  untested
 ###  Contributors:keegang6705,flame-suwan,Calude
 
-### moviepy==1.0.3
-import os
-import time
-import re
+import os,time,re,json,unicodedata
 from tqdm import tqdm
 from pytubefix import YouTube, Playlist
 from pytubefix.cli import on_progress
-import unicodedata
-from moviepy.editor import AudioFileClip
-import shutil
+from moviepy.audio.io.AudioFileClip import AudioFileClip
 
-config = {
-    "config_version": 1,
-    "settings": { 
-        "is_playlist": True, 
-        "audio_only": True,
-        "user_login": False 
-    },
-    "app_data": {
-        "download_path": "C:\Temp\music",
-        "single_url": [],
-        "playlist_url": [
-            "https://youtube.com/playlist?list=PLqMiAjqcD9xwpbKqxM-aBpyNBaL9a2XqH&si=WTrJBeUAVk29w4yH", ##english
-            "https://youtube.com/playlist?list=PLqMiAjqcD9xzTEcUUBk-fDQwjCoxHPo4K&si=F1VjiqwteDk0ZiES", ##japanese
-            "https://youtube.com/playlist?list=PLqMiAjqcD9xz1gaw0tvdd0WnQ_eKqT96z&si=WRlHZEA5bhuK1kxh", ##instrumental
-            "https://youtube.com/playlist?list=PLqMiAjqcD9xwdqiE-cvsKVll0bqWLN0do&si=QcFIQwFBmyWe93US", ##chinese
-            "https://youtube.com/playlist?list=PLqMiAjqcD9xwXRm6TWPQuPd9K23jSCbdu&si=F-ovJRr6dHfFNTsu", ##thai
-            "https://youtube.com/playlist?list=PLqMiAjqcD9xysMokP0H735xtUnFxMfh_n&si=NFl_78VyzFcV_rFv", ##idk
-            "https://music.youtube.com/playlist?list=PLqMiAjqcD9xxFBRQwGbUrq-ySfU3G2uqK&si=i6WQO37iKKV2K3Cg"  ##arknights soundtracks
-        ]
-    }
-}
+
+def load_config(path='./config.json'):
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return json.load(f)
+    else:
+        print("config.json not found, using default config")
+        return {
+            "config_version": 1,
+            "settings": { 
+                "is_playlist": True, 
+                "audio_only": True,
+                "user_login": False 
+            },
+            "app_data": {
+                "download_path": "C:/Temp/music",
+                "single_url": [],
+                "playlist_url": []
+            }
+        }
+
+config = load_config()
 
 MAX_FILENAME_LENGTH = 85
 MAX_RETRY_ATTEMPTS = 10
@@ -192,9 +188,7 @@ def main():
     
     try:
         print("-" * 30)
-        print("Configuration:")
-        for key, value in config.items():
-            print(f"{key}: {value}")
+        print(json.dumps(config, indent=4))
         print("-" * 30)
         
         download_path = config["app_data"]["download_path"]
