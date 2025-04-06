@@ -1,11 +1,10 @@
-import os
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QProgressBar, QTextEdit, QFileDialog
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QFont
 
 # Import your existing code
-from YTDownload import load_config, clean_filename, get_unique_filename, convert_to_mp3, download_single_video, download_playlist, main, config, DownloadError
+from YTDownload import load_config, download_single_video, download_playlist, DownloadError
 
 class DownloadWorker(QThread):
     progress = Signal(str)
@@ -37,9 +36,9 @@ class DownloadWorker(QThread):
 class YouTubeDownloaderUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.initUI()
         self.config = load_config()
         self.download_path = self.config["app_data"]["download_path"]
+        self.initUI()
 
     def initUI(self):
         self.setWindowTitle('YouTube Downloader')
