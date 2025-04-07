@@ -168,4 +168,5 @@ def main():
     except Exception as e:
         print(f"Fatal error: {str(e)}")
     print("\n-------------- Download finished --------------")
-main()
+if __name__ == '__main__':
+    main()
