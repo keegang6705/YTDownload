@@ -1,2 +1,8 @@
 config.json
 *.log
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+.ytdownload-archive.txt
+.ytdownload-index.json
